@@ -7,12 +7,12 @@ const { CleanWebpackPlugin } = require('clean-webpack-plugin');
 
 // webpack中的所有的配置信息都应该写在module.exports中
 module.exports = {
-    // watch:true,
-    // watchOptions:{//监控的选项
-	// 	poll:1000,//每秒问我1000次
-	// 	aggregateTimeout:500,//防抖 我一直输入代码，不会没输入就打包，而是输入完后500毫秒打包一次
-	// 	ignored:/node_modules/ //不需要进行监控哪个文件
-	// },
+    watch:true,
+    watchOptions:{//监控的选项
+		poll:1000,//每秒问我1000次
+		aggregateTimeout:500,//防抖 我一直输入代码，不会没输入就打包，而是输入完后500毫秒打包一次
+		ignored:/node_modules/ //不需要进行监控哪个文件
+	},
     // 指定入口文件
     entry: "./src/index.ts",
 
