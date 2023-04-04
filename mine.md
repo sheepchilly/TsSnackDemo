@@ -266,4 +266,203 @@ class GameControl{
 
 **如何让蛇移动？**（如何反复调用run方法？）
 
-**解决：**用定时器
+**解决：**用**定时器**
+
+1.创建让蛇移动的方法run()
+
+2.根据方向this.direction来使蛇的位置改变
+
+3.获取蛇的坐标 => 蛇的坐标在snack类中，所以用this.snack.X和this.snack.Y来获取 => 用switch判断用户按下的方向键，来控制蛇移动 => 修改蛇的X和Y值，也就是令this.snack.X和this.snack.Y 等于X和Y
+
+4.开启一个定时器调用run方法，用isLive变量来判断蛇是否撞墙或者用户退出了，如果isLive为false就不开启定时器 => 定时器的事件随着等级Level而变化
+
+```js
+run() {
+        //获取蛇当前坐标
+        let X = this.snake.X;
+        let Y = this.snake.Y;
+
+        //根据按键方向来修改X值和Y值
+        switch (this.direction) {
+            case "ArrowUp":
+            case "Up":
+                //向上移动top减少
+                Y-=10;
+                break;
+            case "ArrowDown":
+            case "Dwon":
+                //向下移动top增加
+                Y+=10;
+                break;
+            case "ArrowLeft":
+            case "Left":
+                //向左移动Left减少
+                X -=10;
+                break;
+            case "ArrowRight":
+            case "Right":
+                //向右移动Left增加
+                X +=10;
+                break;
+        }
+        //修改蛇的X和Y值
+        this.snake.X = X
+        this.snake.Y = Y
+    
+        //开启一个定时调用run方法 (this.isLive为true的时候才开启定时器)
+        this.isLive && setTimeout(this.run.bind(this),300-(this.scorePanel.level-1)*30);
+
+    }
+```
+
+## 6.检查蛇是否吃到了食物的方法
+
+**思路：**判断蛇和食物的位置是否重合，如果重合了就证明吃到了食物 => 放在GameControl类中，这样就能得到蛇和食物的位置
+
+1.定义一个方法checkEat()，用来检查蛇是否吃到了食物
+
+```js
+cheeckEat(X:number,Y:number){
+    if(X ===this.food.X && Y ===this.food.Y){
+        //1.食物的位置要进行重置
+        this.food.change();
+        //2.分数增加
+        this.scorePanel.addScore();
+        //3.蛇要增加一节
+        this.snake.addBody()
+    }
+}
+```
+
+2.在run方法中检查蛇是否吃到了食物
+
+```js
+//检查蛇是否吃到了食物
+this.cheeckEat(X,Y);
+```
+
+
+
+# 8.待处理的问题
+
+## 1.蛇穿墙的问题
+
+1.限制蛇的移动位置（在snack类的set X中）
+
+```js
+set X(value:number){
+        //如果新值和旧值相同，则直接返回不再修改
+        if(this.X === value){
+            return;
+        }
+        //X的值的合法范围0-290之间
+        if(value<0 || value>290){
+            //蛇撞墙了抛出异常
+            throw new Error('蛇撞墙了！');
+        }
+        this.head.style.left = value + 'px';
+    }
+    set Y(value:number){
+        //如果新值和旧值相同，则直接返回不再修改
+        if(this.Y === value){
+            return;
+        }
+        //Y的值的合法范围0-290之间
+        if(value<0 || value>290){
+            throw new Error('蛇撞墙了！');
+        }
+        this.head.style.top = value + 'px';
+    }
+```
+
+2.在GameControl中修改蛇的X和Y值，用try...catch捕获异常
+
+```js
+try{
+    this.snake.X = X
+    this.snake.Y = Y
+}catch(e:any){
+    //进入catch说明出现了异常，游戏结束，弹出一个提示信息
+    alert(e.message+'Game Over!');
+    //将isLive设置为false
+    this.isLive = false
+}
+```
+
+## 2.蛇的头和身体没有连起来
+
+**思路：**将后一截的身体设置为前一截身体的位置，eg.第四节 = 第三节的位置，第三节=第二节的位置，第二节=蛇头的位置
+
+1.在snack类中增加一个蛇身体移动的方法
+
+```js
+moveBody(){
+    //遍历获取所有的身体（从后往前）
+    for(let i = this.bodies.length-1; i>0 ;i--){
+        //获取前面身体的位置
+        let X = (this.bodies[i-1] as HTMLElement).offsetLeft;
+        let Y = (this.bodies[i-1] as HTMLElement).offsetTop;
+
+        //将值设置到当前身体上
+        (this.bodies[i] as HTMLElement).style.left=X+'px';
+        (this.bodies[i] as HTMLElement).style.top=Y+'px';
+    }
+}
+```
+
+2.什么时候调用方法？ 在头移动的时候就要移动身体
+
+```js
+//移动身体
+this.moveBody();
+```
+
+
+
+## 3.禁止蛇掉头
+
+**思路：**蛇头跟第二截身体的坐标一样的时候，就说明在掉头。所以要判断蛇头的X坐标和第二节身子的X坐标是否一样，判断的时候要判断是否有第二截身体
+
+```js
+//修改x时，是在修改水平坐标，蛇在左右移动（限制蛇在向左移动时，不能向右掉头）
+if(this.bodies[1] && (this.bodies[1] as HTMLElement).offsetLeft === value){
+    //如果发生了掉头，让蛇向反方向继续移动
+    if(value>this.X){
+        //如果新值value大于旧值X，则说明蛇在向右走，此时发生掉头，应该使蛇继续向左走
+        value = this.X-10;
+    }else{
+        value = this.X+10;
+    }
+}
+```
+
+
+
+## 4.蛇撞自己的问题
+
+**思路：**检查蛇头的坐标和每一个身体的坐标有没有发生重复，如果重复了就证明撞到自己了。
+
+- 需要获取到蛇头的最新坐标
+
+1.新增一个方法
+
+```js
+//检查头和身体有没有相撞
+checkHeadBody(){
+    //获取所有的身体，检查其是否和蛇头坐标发生重叠
+    for(let i =1;i<this.bodies.length;i++){
+        let bd = this.bodies[i] as HTMLElement
+        if(this.X === bd.offsetLeft && this.Y === bd.offsetTop ){
+            //进入判断说明蛇头撞到了身体，游戏结束
+            throw new Error('撞到自己了~~');
+        }
+    }
+}
+```
+
+2.在每次坐标发生变化的时候检查有没有撞到自己 => 在set X()和set Y()中
+
+```js
+this.checkHeadBody();
+```
+

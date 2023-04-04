@@ -19,7 +19,7 @@ class GameControl {
     constructor() {
         this.snake = new Snack();
         this.food = new Food();
-        this.scorePanel = new ScorePanel();
+        this.scorePanel = new ScorePanel(10,2);
 
         this.init();
     }
@@ -81,12 +81,34 @@ class GameControl {
         }
 
         //修改蛇的X和Y值
-        this.snake.X = X
-        this.snake.Y = Y
+        try{
+            this.snake.X = X
+            this.snake.Y = Y
+        }catch(e:any){
+            //进入catch说明出现了异常，游戏结束，弹出一个提示信息
+            alert(e.message+'Game Over!');
+            //将isLive设置为false
+            this.isLive = false
+        }
 
         //开启一个定时调用run方法 (this.isLive为true的时候才开启定时器)
         this.isLive && setTimeout(this.run.bind(this),300-(this.scorePanel.level-1)*30);
 
+        //检查蛇是否吃到了食物
+        this.cheeckEat(X,Y);
+    }
+    
+
+    //定义一个方法，用来检查蛇是否吃到了食物
+    cheeckEat(X:number,Y:number){
+        if(X ===this.food.X && Y ===this.food.Y){
+            //1.食物的位置要进行重置
+            this.food.change();
+            //2.分数增加
+            this.scorePanel.addScore();
+            //3.蛇要增加一节
+            this.snake.addBody()
+        }
     }
 }
 
